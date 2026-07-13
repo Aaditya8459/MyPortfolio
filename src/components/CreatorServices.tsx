@@ -65,7 +65,7 @@ function ToolOrbital() {
   const [isPaused, setIsPaused] = useState(false);
   const [selectedTool, setSelectedTool] = useState<ToolItem | null>(null);
   const [positions, setPositions] = useState<number[]>(toolLanes.map((t) => t.startX));
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number>(null);
 
   const animate = useCallback(() => {
     if (!isPaused) {
