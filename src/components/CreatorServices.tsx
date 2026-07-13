@@ -7,7 +7,7 @@ import {
   Camera, Video, Film, Scissors, Palette, Clapperboard,
   Baby, Store, PartyPopper, Heart, Mountain, Sparkles, Star,
   Monitor, Wand2, Layers, Music, Mic, Aperture, Zap, Eye, Award,
-  PenTool, Crop, Wand
+  PenTool, Crop, Wand,Code2
 } from "lucide-react";
 
 interface ToolItem {
