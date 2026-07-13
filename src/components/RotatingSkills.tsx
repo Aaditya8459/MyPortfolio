@@ -101,7 +101,7 @@ export default function OrbitalSkills() {
   const [positions, setPositions] = useState<number[]>(
     skills.map((s) => s.startX)
   );
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number>(null);
 
   const animate = useCallback(() => {
     if (!isPaused) {
