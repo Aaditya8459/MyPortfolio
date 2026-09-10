@@ -9,9 +9,9 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Aaditya Maindarkar | GenAI Engineer, Developer & Creator",
-  description: "Portfolio of Aaditya Maindarkar — GenAI Engineer, Full-Stack Developer, and Professional Visual Creator based in Pune, India.",
-  keywords: ["Aaditya Maindarkar", "GenAI", "Full-Stack Developer", "Agentic AI", "Video Editor", "Photographer", "React", "Next.js", "Portfolio"],
+  title: "Aaditya Maindarkar | AI Engineer, Software Developer &",
+  description: "Portfolio of Aaditya Maindarkar — AI Engineer, Software Developer, and Professional Visual Creator based in Pune, India.",
+  keywords: ["Aaditya Maindarkar", "AI", "Software Developer", "Agentic AI", "React", "Next.js", "Portfolio"],
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -10,7 +10,6 @@ import AboutSection from "@/components/AboutSection";
 import RotatingSkills from "@/components/RotatingSkills";
 import ExperienceSection from "@/components/ExperienceSection";
 import ProjectsSection from "@/components/ProjectsSection";
-import CreatorServices from "@/components/CreatorServices";
 import AchievementsSection from "@/components/AchievementsSection";
 import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
@@ -33,7 +32,6 @@ export default function Home() {
           <RotatingSkills />
           <ExperienceSection />
           <ProjectsSection />
-          <CreatorServices />
           <AchievementsSection />
           <ContactSection />
           <Footer />

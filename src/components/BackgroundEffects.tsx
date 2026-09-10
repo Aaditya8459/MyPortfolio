@@ -3,110 +3,443 @@
 import { useEffect, useRef } from "react";
 import { useMouseParallax } from "@/hooks/useMouseParallax";
 
+interface Particle {
+  x: number;
+  y: number;
+  size: number;
+  speedY: number;
+  speedX: number;
+  opacity: number;
+  color: string;
+  pulse: number;
+  pulseSpeed: number;
+}
+
 export default function BackgroundEffects() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const orb1Ref = useMouseParallax(20);
-  const orb2Ref = useMouseParallax(30);
-  const orb3Ref = useMouseParallax(15);
+
+  const orb1Ref = useMouseParallax(18);
+  const orb2Ref = useMouseParallax(26);
+  const orb3Ref = useMouseParallax(14);
 
   useEffect(() => {
     const canvas = canvasRef.current;
+
     if (!canvas) return;
+
     const ctx = canvas.getContext("2d");
+
     if (!ctx) return;
+
     let animationId: number;
     let time = 0;
-    const particles: Array<{x: number; y: number; size: number; speedY: number; speedX: number; opacity: number; color: string; trail: Array<{x: number; y: number; opacity: number}>}> = [];
 
-    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    const particles: Particle[] = [];
+
+    const colors = [
+      "#f093fb",
+      "#c13584",
+      "#7c3aed",
+      "#fb7185",
+    ];
+
+    const resize = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+
+      canvas.style.width = `${window.innerWidth}px`;
+      canvas.style.height = `${window.innerHeight}px`;
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+
     resize();
+
     window.addEventListener("resize", resize);
 
-    for (let i = 0; i < 50; i++) {
+    const particleCount = window.innerWidth < 768 ? 28 : 48;
+
+    for (let i = 0; i < particleCount; i++) {
       particles.push({
-        x: Math.random() * canvas.width, y: Math.random() * canvas.height,
-        size: 1 + Math.random() * 3, speedY: -(0.2 + Math.random() * 0.8),
-        speedX: (Math.random() - 0.5) * 0.3, opacity: 0.2 + Math.random() * 0.5,
-        color: ["#f093fb", "#c13584", "#7c3aed", "#fb7185"][Math.floor(Math.random() * 4)],
-        trail: [],
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        size: 0.7 + Math.random() * 1.8,
+        speedY: -(0.08 + Math.random() * 0.32),
+        speedX: (Math.random() - 0.5) * 0.12,
+        opacity: 0.12 + Math.random() * 0.35,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        pulse: Math.random() * Math.PI * 2,
+        pulseSpeed: 0.008 + Math.random() * 0.018,
       });
     }
 
-    const animate = () => {
-      time += 0.01;
-      ctx.fillStyle = "rgba(10, 2, 21, 0.15)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      particles.forEach((p) => {
-        p.trail.push({ x: p.x, y: p.y, opacity: p.opacity });
-        if (p.trail.length > 15) p.trail.shift();
-        p.y += p.speedY;
-        p.x += p.speedX + Math.sin(time + p.y * 0.01) * 0.2;
-        if (p.y < -20) { p.y = canvas.height + 20; p.x = Math.random() * canvas.width; p.trail = []; }
-        if (p.x < -20) p.x = canvas.width + 20;
-        if (p.x > canvas.width + 20) p.x = -20;
+    const hexToRgb = (hex: string) => {
+      const value = hex.replace("#", "");
 
-        p.trail.forEach((t, i) => {
-          const trailOpacity = (i / p.trail.length) * t.opacity * 0.3;
-          const r = parseInt(p.color.slice(1, 3), 16);
-          const g = parseInt(p.color.slice(3, 5), 16);
-          const b = parseInt(p.color.slice(5, 7), 16);
-          ctx.beginPath();
-          ctx.arc(t.x, t.y, p.size * (i / p.trail.length), 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${trailOpacity})`;
-          ctx.fill();
-        });
+      return {
+        r: parseInt(value.substring(0, 2), 16),
+        g: parseInt(value.substring(2, 4), 16),
+        b: parseInt(value.substring(4, 6), 16),
+      };
+    };
 
-        const r = parseInt(p.color.slice(1, 3), 16);
-        const g = parseInt(p.color.slice(3, 5), 16);
-        const b = parseInt(p.color.slice(5, 7), 16);
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${p.opacity})`;
-        ctx.fill();
+    const drawParticle = (particle: Particle) => {
+      const rgb = hexToRgb(particle.color);
 
-        const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 4);
-        glow.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${p.opacity * 0.3})`);
-        glow.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * 4, 0, Math.PI * 2);
-        ctx.fillStyle = glow;
-        ctx.fill();
-      });
+      particle.pulse += particle.pulseSpeed;
+
+      const pulseOpacity =
+        particle.opacity *
+        (0.7 + Math.sin(particle.pulse) * 0.3);
+
+      const glowRadius = particle.size * 6;
+
+      const glow = ctx.createRadialGradient(
+        particle.x,
+        particle.y,
+        0,
+        particle.x,
+        particle.y,
+        glowRadius
+      );
+
+      glow.addColorStop(
+        0,
+        `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${
+          pulseOpacity * 0.35
+        })`
+      );
+
+      glow.addColorStop(
+        1,
+        `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`
+      );
+
+      ctx.beginPath();
+
+      ctx.arc(
+        particle.x,
+        particle.y,
+        glowRadius,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fillStyle = glow;
+      ctx.fill();
+
+      ctx.beginPath();
+
+      ctx.arc(
+        particle.x,
+        particle.y,
+        particle.size,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${pulseOpacity})`;
+
+      ctx.fill();
+    };
+
+    const drawConnections = () => {
+      const maxDistance = window.innerWidth < 768 ? 110 : 135;
 
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 150) {
+          const a = particles[i];
+          const b = particles[j];
+
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+
+          const distance = Math.sqrt(
+            dx * dx + dy * dy
+          );
+
+          if (distance < maxDistance) {
+            const opacity =
+              0.035 *
+              (1 - distance / maxDistance);
+
             ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(240, 147, 251, ${0.05 * (1 - dist / 150)})`;
-            ctx.lineWidth = 0.5;
+
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+
+            ctx.strokeStyle = `rgba(240, 147, 251, ${opacity})`;
+
+            ctx.lineWidth = 0.45;
+
             ctx.stroke();
           }
         }
       }
-      animationId = requestAnimationFrame(animate);
     };
+
+    const animate = () => {
+      time += 0.01;
+
+      ctx.clearRect(
+        0,
+        0,
+        window.innerWidth,
+        window.innerHeight
+      );
+
+      particles.forEach((particle) => {
+        particle.y += particle.speedY;
+
+        particle.x +=
+          particle.speedX +
+          Math.sin(
+            time * 0.6 + particle.y * 0.008
+          ) *
+            0.08;
+
+        if (particle.y < -10) {
+          particle.y =
+            window.innerHeight + 10;
+
+          particle.x =
+            Math.random() * window.innerWidth;
+        }
+
+        if (particle.x < -10) {
+          particle.x =
+            window.innerWidth + 10;
+        }
+
+        if (particle.x > window.innerWidth + 10) {
+          particle.x = -10;
+        }
+      });
+
+      drawConnections();
+
+      particles.forEach(drawParticle);
+
+      animationId =
+        requestAnimationFrame(animate);
+    };
+
     animate();
-    return () => { cancelAnimationFrame(animationId); window.removeEventListener("resize", resize); };
+
+    return () => {
+      cancelAnimationFrame(animationId);
+
+      window.removeEventListener(
+        "resize",
+        resize
+      );
+    };
   }, []);
 
   return (
     <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-      <div ref={orb1Ref} className="absolute -top-[10%] -left-[10%] w-[700px] h-[700px] rounded-full animate-orb-float" style={{ background: "radial-gradient(circle, rgba(193, 53, 132, 0.4) 0%, rgba(193, 53, 132, 0.1) 40%, transparent 70%)", filter: "blur(60px)" }} />
-      <div ref={orb2Ref} className="absolute top-[30%] -right-[15%] w-[600px] h-[600px] rounded-full animate-orb-float-reverse" style={{ background: "radial-gradient(circle, rgba(124, 58, 237, 0.35) 0%, rgba(124, 58, 237, 0.08) 40%, transparent 70%)", filter: "blur(70px)" }} />
-      <div ref={orb3Ref} className="absolute -bottom-[10%] left-[20%] w-[500px] h-[500px] rounded-full animate-orb-float-slow" style={{ background: "radial-gradient(circle, rgba(240, 147, 251, 0.3) 0%, rgba(240, 147, 251, 0.05) 40%, transparent 70%)", filter: "blur(50px)" }} />
-      <div className="absolute top-[60%] left-[10%] w-[200px] h-[200px] rounded-full animate-orb-float-slow" style={{ background: "radial-gradient(circle, rgba(251, 113, 133, 0.2), transparent 70%)", filter: "blur(40px)", animationDelay: "-5s" }} />
-      <div className="absolute top-[10%] right-[30%] w-[150px] h-[150px] rounded-full animate-orb-float" style={{ background: "radial-gradient(circle, rgba(193, 53, 132, 0.25), transparent 70%)", filter: "blur(35px)", animationDelay: "-10s" }} />
-      <canvas ref={canvasRef} className="absolute inset-0" />
-      <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`, backgroundSize: "256px 256px" }} />
-      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at center, transparent 0%, transparent 50%, rgba(10, 2, 21, 0.6) 100%)" }} />
+
+      {/* ========================================================= */}
+      {/* BASE BACKGROUND */}
+      {/* ========================================================= */}
+
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(circle at 50% 30%, rgba(50, 10, 60, 0.18) 0%, rgba(10, 2, 21, 0) 45%), #0a0215",
+        }}
+      />
+
+      {/* ========================================================= */}
+      {/* LARGE ROUND ORBS */}
+      {/* ========================================================= */}
+
+      <div
+        ref={orb1Ref}
+        className="absolute -top-[18%] -left-[12%] w-[620px] h-[620px] sm:w-[720px] sm:h-[720px] rounded-full animate-orb-float"
+        style={{
+          background:
+            "radial-gradient(circle at center, rgba(193, 53, 132, 0.22) 0%, rgba(193, 53, 132, 0.09) 35%, rgba(193, 53, 132, 0.025) 55%, transparent 72%)",
+          filter: "blur(45px)",
+        }}
+      />
+
+      <div
+        ref={orb2Ref}
+        className="absolute top-[18%] -right-[18%] w-[560px] h-[560px] sm:w-[680px] sm:h-[680px] rounded-full animate-orb-float-reverse"
+        style={{
+          background:
+            "radial-gradient(circle at center, rgba(124, 58, 237, 0.2) 0%, rgba(124, 58, 237, 0.075) 38%, rgba(124, 58, 237, 0.02) 58%, transparent 74%)",
+          filter: "blur(50px)",
+        }}
+      />
+
+      <div
+        ref={orb3Ref}
+        className="absolute -bottom-[20%] left-[18%] w-[520px] h-[520px] sm:w-[620px] sm:h-[620px] rounded-full animate-orb-float-slow"
+        style={{
+          background:
+            "radial-gradient(circle at center, rgba(240, 147, 251, 0.16) 0%, rgba(240, 147, 251, 0.055) 38%, rgba(240, 147, 251, 0.015) 58%, transparent 74%)",
+          filter: "blur(48px)",
+        }}
+      />
+
+      {/* ========================================================= */}
+      {/* SMALL ROUND ORBS */}
+      {/* ========================================================= */}
+
+      <div
+        className="absolute top-[12%] right-[28%] w-[170px] h-[170px] rounded-full animate-orb-float"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(193, 53, 132, 0.13) 0%, rgba(193, 53, 132, 0.035) 45%, transparent 72%)",
+          filter: "blur(30px)",
+          animationDelay: "-7s",
+        }}
+      />
+
+      <div
+        className="absolute top-[58%] left-[7%] w-[210px] h-[210px] rounded-full animate-orb-float-slow"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(251, 113, 133, 0.11) 0%, rgba(251, 113, 133, 0.025) 48%, transparent 74%)",
+          filter: "blur(35px)",
+          animationDelay: "-4s",
+        }}
+      />
+
+      <div
+        className="absolute bottom-[8%] right-[12%] w-[180px] h-[180px] rounded-full animate-orb-float-reverse"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(124, 58, 237, 0.11) 0%, rgba(124, 58, 237, 0.025) 48%, transparent 74%)",
+          filter: "blur(35px)",
+          animationDelay: "-9s",
+        }}
+      />
+
+      {/* ========================================================= */}
+      {/* CENTER AI GLOW */}
+      {/* ========================================================= */}
+
+      <div
+        className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(193, 53, 132, 0.055) 0%, rgba(124, 58, 237, 0.025) 40%, transparent 72%)",
+          filter: "blur(25px)",
+        }}
+      />
+
+      {/* ========================================================= */}
+      {/* PARTICLE NETWORK */}
+      {/* ========================================================= */}
+
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 opacity-80"
+      />
+
+      {/* ========================================================= */}
+      {/* SUBTLE TECH GRID */}
+      {/* ========================================================= */}
+
+      <div
+        className="absolute inset-0 opacity-[0.018]"
+        style={{
+          backgroundImage: `
+            linear-gradient(
+              rgba(240,147,251,0.45) 1px,
+              transparent 1px
+            ),
+            linear-gradient(
+              90deg,
+              rgba(240,147,251,0.45) 1px,
+              transparent 1px
+            )
+          `,
+          backgroundSize:
+            "72px 72px",
+          maskImage:
+            "radial-gradient(circle at center, black 0%, transparent 78%)",
+          WebkitMaskImage:
+            "radial-gradient(circle at center, black 0%, transparent 78%)",
+        }}
+      />
+
+      {/* ========================================================= */}
+      {/* CENTER RADIAL LIGHT */}
+      {/* ========================================================= */}
+
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, transparent 25%, rgba(10, 2, 21, 0.12) 65%, rgba(10, 2, 21, 0.62) 100%)",
+        }}
+      />
+
+      {/* ========================================================= */}
+      {/* EDGE VIGNETTE */}
+      {/* ========================================================= */}
+
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(circle at center, transparent 45%, rgba(10, 2, 21, 0.5) 100%)",
+        }}
+      />
+
+      {/* ========================================================= */}
+      {/* SUBTLE FILM GRAIN */}
+      {/* ========================================================= */}
+
+      <div
+        className="absolute inset-0 opacity-[0.018]"
+        style={{
+          backgroundImage:
+            `url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='.8'/%3E%3C/svg%3E")`,
+          backgroundSize:
+            "180px 180px",
+        }}
+      />
+
+      {/* ========================================================= */}
+      {/* PREMIUM SCAN LINE */}
+      {/* ========================================================= */}
+
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute w-full h-[1px] bg-gradient-to-r from-transparent via-brand-pink/10 to-transparent animate-scanline" style={{ animationDuration: "12s" }} />
+        <div
+          className="absolute w-full h-[1px] bg-gradient-to-r from-transparent via-brand-pink/10 to-transparent animate-scanline"
+          style={{
+            animationDuration: "14s",
+          }}
+        />
       </div>
+
+      {/* ========================================================= */}
+      {/* TOP / BOTTOM FADE */}
+      {/* ========================================================= */}
+
+      <div
+        className="absolute inset-x-0 top-0 h-32"
+        style={{
+          background:
+            "linear-gradient(to bottom, rgba(10,2,21,0.35), transparent)",
+        }}
+      />
+
+      <div
+        className="absolute inset-x-0 bottom-0 h-40"
+        style={{
+          background:
+            "linear-gradient(to top, rgba(10,2,21,0.45), transparent)",
+        }}
+      />
     </div>
   );
 }
