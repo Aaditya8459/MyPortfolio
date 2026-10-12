@@ -9,7 +9,7 @@ const experiences = [
     role: "GenAI Intern",
     company: "OxiqAI",
     department: "Agentic AI R&D",
-    date: "June 2026 – Present",
+    date: "June 2026 – Sep 2026(3 Months)",
     points: [
       "Engineering autonomous, goal-oriented AI systems for complex multi-step tasks",
       "Optimizing LLM reasoning via advanced prompt engineering & agentic frameworks",
